@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漫遊雙溪步佈走讀神</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        :root {
+            --square-size: clamp(75px, 10vw, 90px);
+            --board-border-color: #2c7a51; /* Deep Green */
+            --board-gap: 4px;
+            --accent-color-1: #4CAF50; /* Vibrant Green */
+            --accent-color-2: #FFC107; /* Amber Yellow */
+            --text-dark: #333;
+            --text-light: #f8f8f8;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #e0f2f1; /* Lighter teal base */
+            background-image: linear-gradient(to bottom right, #e6f7e1, #d0f0c0), 
+                              radial-gradient(rgba(136, 196, 154, 0.5) 1.2px, transparent 1.2px);
+            background-size: cover, 28px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 100vh;
+            padding: 1rem;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .game-wrapper {
+            max-width: 900px;
+            width: 100%;
+            background-color: rgba(240, 249, 232, 0.95); /* Slightly transparent light green */
+            border-radius: 20px;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.22), 0 0 0 6px rgba(44, 122, 81, 0.35);
+            padding: clamp(1.2rem, 3.5vw, 2rem);
+            border: 4px solid var(--board-border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: auto;
+        }
+        
+        #board-path-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--board-gap);
+            justify-content: center;
+            padding: var(--board-gap);
+            background-color: rgba(176, 217, 177, 0.8); /* Softer green */
+            border-radius: 12px;
+            margin-bottom: 25px;
+            position: relative;
+            width: 100%;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .board-square {
+            width: var(--square-size);
+            height: var(--square-size);
+            border: 2px solid var(--board-border-color);
+            background-color: #ffffff;
+            transition: all 0.3s ease-in-out, transform 0.2s ease; /* Added transform transition */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 5px;
+            overflow: hidden;
+            position: relative;
+            cursor: default;
+            border-radius: 10px; /* Base rounding */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        .board-square:hover:not(.highlight) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.12);
+        }
+        
+        .board-square.highlight {
+            box-shadow: 0 0 20px 8px rgba(255, 215, 0, 0.9); /* Brighter, larger highlight */
+            transform: scale(1.05); /* Slightly more pronounced */
+            z-index: 10;
+            border-color: var(--accent-color-2);
+        }
+
+        /* Special Square Styles */
+        .square-chance { background-color: #e0f7fa !important; border: 3px dashed #00BCD4 !important; border-radius: 25px !important; }
+        .square-chance .location-icon i { color: #0097A7; }
+
+        .square-fate { background-color: #fff3e0 !important; border: 3px dotted #FF9800 !important; border-radius: 50% !important; /* Circular */ }
+        .square-fate .location-icon i { color: #F57C00; }
+
+        .square-rest { background-color: #fce4ec !important; border: 3px double #E91E63 !important; border-radius: 12px 38px !important; /* Asymmetric */ }
+        .square-rest .location-icon i { color: #C2185B; }
+
+        .square-end .location-icon i { color: #FFD700; } /* Gold for trophy */
+        .square-end .location-text { font-weight: bold; color: #6a0dad; } /* Purple for end text */
+
+
+        .square-fate .location-text, .square-chance .location-text {
+             font-size: clamp(7px, 1.3vw, 9px);
+        }
+        
+        #board-center {
+            background-color: rgba(255, 255, 255, 0.97);
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: clamp(18px, 2.5vw, 25px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            width: 100%;
+            max-width: 580px;
+            border: 3px solid var(--board-border-color);
+        }
+
+        .player {
+            width: clamp(18px, 2.5vw, 22px);
+            height: clamp(18px, 2.5vw, 22px);
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Smooth movement with bounce */
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            font-size: clamp(9px, 1.5vw, 11px);
+            border: 1.5px solid rgba(0,0,0,0.35);
+        }
+        
+        .dice {
+            width: clamp(55px, 7.5vw, 65px);
+            height: clamp(55px, 7.5vw, 65px);
+            border-radius: 10px;
+            background-color: var(--accent-color-1);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(30px, 4.5vw, 38px);
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+        }
+        
+        .dice:hover { transform: translateY(-3px) scale(1.12); box-shadow: 0 7px 14px rgba(0,0,0,0.28); }
+        .dice:active { transform: translateY(0px) scale(1.05); box-shadow: 0 3px 6px rgba(0,0,0,0.22); }
+        .dice.rolling { animation: diceRoll 0.5s ease-in-out infinite; }
+        @keyframes diceRoll {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(20deg) scale(1.08); }
+            75% { transform: rotate(-20deg) scale(1.08); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        
+        .popup-card { /* Base for event and quiz cards */
+            position: fixed;
+            width: clamp(300px, 85vw, 400px);
+            min-height: 180px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+            padding: 25px 30px;
+            z-index: 200;
+            top: 50%; left: 50%;
+            border: 4px solid var(--accent-color-1);
+            display: flex; /* Changed to flex for easier content management */
+            flex-direction: column;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.85);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            pointer-events: none;
+        }
+        .popup-card.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .quiz-options button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border: 1.5px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            transition: background-color 0.2s, border-color 0.2s;
+            font-size: 0.9rem;
+        }
+        .quiz-options button:hover { background-color: #eef; border-color: var(--accent-color-1); }
+        .quiz-options button:disabled { background-color: #f0f0f0; color: #999; cursor: not-allowed; }
+        
+        .location-icon i { font-size: clamp(24px, 3.8vw, 30px); margin-bottom: 5px; color: #388E3C; }
+        .location-text { font-size: clamp(8.5px, 1.6vw, 10.5px); font-weight: 500; line-height: 1.25; }
+        
+        .player-color-indicator { width: 16px; height: 16px; border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid rgba(0,0,0,0.15); }
+        .player-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; width: 100%; max-height: 170px; overflow-y: auto; padding: 8px; margin-bottom: 12px; background-color: rgba(220,240,220,0.5); border-radius: 8px;}
+        .player-info-box { background-color: #e8f5e9; padding: 8px 10px; border-radius: 8px; font-size: clamp(11.5px, 1.9vw, 12.5px); border: 1.5px solid #c8e6c9; transition: all 0.3s ease; }
+        .player-info-box.active { border: 2.5px solid var(--accent-color-1); box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); transform: scale(1.03); background-color: #dff3df; }
+        .game-message-area { background-color: #dcf4dc; padding: clamp(10px, 1.8vw, 12px); border-radius: 10px; width: 100%; text-align: center; margin-bottom: 12px; color: #1b5e20; border: 1.5px solid #a5d6a7; font-weight: 500; font-size: clamp(12.5px, 2.1vw, 14.5px); min-height: 45px; transition: opacity 0.2s ease-in-out; }
+        
+        .start-setup-area { width: 100%; margin-bottom: 15px; }
+        .start-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: clamp(12.5px, 2.1vw, 14.5px); padding: 0 8px; margin-bottom: 10px; }
+        #player-name-setup { width: 100%; margin-top: 10px; }
+        #player-name-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .player-name-entry { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background-color: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;}
+        .player-name-input { flex-grow: 1; border: 1px solid #ced4da; border-radius: 4px; padding: 4px 8px; font-size: 0.85rem; }
+        .player-name-input:focus { border-color: var(--accent-color-1); box-shadow: 0 0 0 0.2rem rgba(76,175,80,.25); outline: none;}
+
+
+        .action-button { /* Common style for start/close buttons */
+            background-color: var(--accent-color-1);
+            color: var(--text-light);
+            padding: 8px 15px; /* Slightly larger */
+            border-radius: 6px;
+            font-size: 0.95rem; /* Slightly larger */
+            transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            border: none;
+            cursor: pointer;
+        }
+        .action-button:hover { background-color: #388E3C; filter: brightness(110%); transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
+        .action-button:active { transform: translateY(0px); filter: brightness(95%); box-shadow: 0 1px 2px rgba(0,0,0,0.15) inset; }
+        .action-button:disabled { background-color: #aaa; cursor: not-allowed; filter: grayscale(50%);}
+        
+        .footer {
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 0.85rem;
+            color: #444;
+            margin-top: 30px;
+            background-color: rgba(200, 230, 201, 0.6);
+            border-top: 1px solid rgba(44, 122, 81, 0.25);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-green-800 mb-5">漫遊雙溪步佈走讀神</h1>
+        
+        <div id="board-path-container">
+            <!-- Start -->
+            <div class="board-square bg-green-100" data-type="start" data-location="頂雙溪">
+                <div class="location-icon"><i class="fas fa-flag-checkered"></i></div><div class="location-text">頂雙溪</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="雙溪火車站">
+                <div class="location-icon"><i class="fas fa-train-subway"></i></div><div class="location-text">雙溪火車站</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="雙溪逐雨巷">
+                <div class="location-icon"><i class="fas fa-cloud-showers-heavy"></i></div><div class="location-text">雙溪逐雨巷</div>
+            </div>
+            <!-- Chance -->
+            <div class="board-square square-chance" data-type="chance" data-location="平林溪">
+                <div class="location-icon"><i class="fas fa-water"></i></div><div class="location-text">平林溪</div>
+            </div>
+             <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="雙溪打鐵舖">
+                <div class="location-icon"><i class="fas fa-hammer"></i></div><div class="location-text">雙溪打鐵舖</div>
+            </div>
+            <!-- Rest -->
+            <div class="board-square square-rest" data-type="rest" data-location="海山餅店">
+                <div class="location-icon"><i class="fas fa-cookie-bite"></i></div><div class="location-text">海山餅店</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="保我黎民碑">
+                <div class="location-icon"><i class="fas fa-monument"></i></div><div class="location-text">保我黎民碑</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="雙溪三忠廟">
+                <div class="location-icon"><i class="fas fa-landmark"></i></div><div class="location-text">雙溪三忠廟</div>
+            </div>
+            <!-- Fate -->
+            <div class="board-square square-fate" data-type="fate" data-location="毛蟹">
+                <div class="location-icon"><i class="fas fa-paw"></i></div><div class="location-text">毛蟹</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="林益和堂">
+                <div class="location-icon"><i class="fas fa-store"></i></div><div class="location-text">林益和堂</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="渡船頭">
+                <div class="location-icon"><i class="fas fa-anchor"></i></div><div class="location-text">渡船頭</div>
+            </div>
+            <!-- Rest -->
+            <div class="board-square square-rest" data-type="rest" data-location="蔡冰雪花冰">
+                <div class="location-icon"><i class="fas fa-ice-cream"></i></div><div class="location-text">蔡冰雪花冰</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="周家古厝">
+                <div class="location-icon"><i class="fas fa-house-chimney-user"></i></div><div class="location-text">周家古厝</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="長安老街">
+                <div class="location-icon"><i class="fas fa-road"></i></div><div class="location-text">長安老街</div>
+            </div>
+            <!-- Fate -->
+            <div class="board-square square-fate" data-type="fate" data-location="山藥">
+                <div class="location-icon"><i class="fas fa-carrot"></i></div><div class="location-text">山藥</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="連舉人厝">
+                <div class="location-icon"><i class="fas fa-landmark-dome"></i></div><div class="location-text">連舉人厝</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="蔴竹坑福德祠">
+                <div class="location-icon"><i class="fas fa-place-of-worship"></i></div><div class="location-text">蔴竹坑福德祠</div>
+            </div>
+             <!-- Chance -->
+            <div class="board-square square-chance" data-type="chance" data-location="牡丹溪">
+                <div class="location-icon"><i class="fas fa-water"></i></div><div class="location-text">牡丹溪</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="淡蘭古道">
+                <div class="location-icon"><i class="fas fa-hiking"></i></div><div class="location-text">淡蘭古道</div>
+            </div>
+             <!-- Rest -->
+            <div class="board-square square-rest" data-type="rest" data-location="毛蟹盛">
+                <div class="location-icon"><i class="fas fa-utensils"></i></div><div class="location-text">毛蟹盛</div>
+            </div>
+            <!-- Fate -->
+            <div class="board-square square-fate" data-type="fate" data-location="野薑花">
+                <div class="location-icon"><i class="fas fa-fan"></i></div><div class="location-text">野薑花</div>
+            </div>
+            <!-- Attractions -->
+            <div class="board-square" data-type="attraction" data-location="虎豹潭">
+                <div class="location-icon"><i class="fas fa-swimmer"></i></div><div class="location-text">虎豹潭</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="不厭亭">
+                <div class="location-icon"><i class="fas fa-binoculars"></i></div><div class="location-text">不厭亭</div>
+            </div>
+            <div class="board-square" data-type="attraction" data-location="雙溪荷花園">
+                <div class="location-icon"><i class="fas fa-spa"></i></div><div class="location-text">雙溪荷花園</div>
+            </div>
+            <!-- End -->
+            <div class="board-square bg-purple-200 square-end" data-type="end" data-location="雙溪高中">
+                <div class="location-icon"><i class="fas fa-trophy"></i></div><div class="location-text">雙溪高中</div>
+            </div>
+        </div> 
+        
+        <div id="board-center">
+            <div class="text-xl md:text-2xl font-bold text-green-700 mb-3">遊戲控制板</div>
+            <div class="dice mb-4" id="dice"><i class="fas fa-dice-d6"></i></div>
+            
+            <div class="start-setup-area">
+                <div class="start-controls">
+                    <div>
+                        <label for="player-count" class="font-medium">人數:</label>
+                        <select id="player-count" class="border rounded px-1.5 py-1 text-sm shadow-sm">
+                            <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option>
+                            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                        </select>
+                    </div>
+                    <button id="start-game" class="action-button">開始遊戲</button>
+                </div>
+                <div id="player-name-setup" style="display: none;">
+                     <h4 class="font-semibold mb-2 text-sm text-green-600">設定玩家名稱 (選填):</h4>
+                     <div id="player-name-inputs"></div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center w-full mb-3">
+                <div>
+                    <span class="font-medium">輪到: </span>
+                    <span id="current-player-name-display" class="font-bold text-red-600 text-lg"></span>
+                </div>
+                <div>
+                    <span class="font-medium">玩家編號: </span>
+                    <span id="current-player-indicator" class="font-bold text-red-600 text-lg"></span>
+                </div>
+            </div>
+
+            <div class="game-message-area" id="game-message">選擇人數並開始遊戲！</div>
+            <div class="player-controls" id="player-controls"></div>
+        </div>
+        
+        <!-- Event Card -->
+        <div class="popup-card event-card" id="event-card">
+            <h3 class="text-xl font-bold mb-3 text-green-700" id="event-title">事件卡</h3>
+            <p id="event-description" class="mb-5 text-gray-700 text-base flex-grow">事件描述</p>
+            <button id="event-close" class="action-button w-full py-2.5">確定</button>
+        </div>
+
+        <!-- Quiz Card -->
+        <div class="popup-card quiz-card" id="quiz-card">
+            <h3 class="text-xl font-bold mb-3 text-blue-700" id="quiz-title">景點問答</h3>
+            <p id="quiz-question" class="mb-4 text-gray-800 text-base font-medium">問題內容...</p>
+            <div id="quiz-options" class="quiz-options mb-4 flex-grow">
+                <!-- Options will be generated here -->
+            </div>
+            <p id="quiz-feedback" class="text-base font-bold mb-4 h-6 text-center"></p>
+            <!-- Submit button removed, answer by clicking option -->
+        </div>
+    </div>
+
+    <div class="footer">
+        Copyright © Liyuchiutiger Gongminshen
+    </div>
+
+    <script>
+        const el = (id) => document.getElementById(id);
+        const diceElement = el('dice'), gameMessageElement = el('game-message'), playerCountSelect = el('player-count');
+        const startGameButton = el('start-game'), currentPlayerIndicator = el('current-player-indicator');
+        const currentPlayerNameDisplay = el('current-player-name-display');
+        const playerControlsContainer = el('player-controls'), eventCardElement = el('event-card');
+        const eventTitleElement = el('event-title'), eventDescriptionElement = el('event-description');
+        const eventCloseButton = el('event-close'), boardPathContainer = el('board-path-container');
+        const quizCardElement = el('quiz-card'), quizTitleElement = el('quiz-title');
+        const quizQuestionElement = el('quiz-question'), quizOptionsElement = el('quiz-options');
+        const quizFeedbackElement = el('quiz-feedback');
+        const playerNameSetupDiv = el('player-name-setup'), playerNameInputsDiv = el('player-name-inputs');
+
+        const CHANCE_OF_DOUBLING = 0.33; // 33% chance for doubling effects
+
+        const gameState = {
+            currentPlayer: 1, players: {}, playerCount: 2, diceRolling: false, boardPath: [], 
+            gameStarted: false, currentQuiz: null, endSquareIndex: -1,
+            playerColors: ['#E53935', '#1E88E5', '#43A047', '#FDD835', '#8E24AA', '#FB8C00', '#00ACC1', '#D81B60', '#6D4C41', '#7CB342', '#5E35B1', '#039BE5'], // 12 Colors
+            quizData: { 
+                "雙溪火車站": { q: "從臺北出發雙溪火車站的上下站分別是？", o: ["牡丹/貢寮", "瑞芳/十分", "平溪/三貂嶺", "侯硐/福隆"], a: 0 },
+                "雙溪逐雨巷": { q: "「逐雨巷」的名稱由來與下列何者最不相關？", o: ["時常下雨", "馬兒追逐", "詩詞語句", "細長巷子"], a: 1 },
+                "雙溪打鐵舖": { q: "雙溪打鐵舖以製作何種傳統工具聞名？", o: ["農具", "兵器", "黃金項鍊", "純銀飾品"], a: 0 },
+                "保我黎民碑": { q: "「保我黎民」碑立碑的歷史背景與下列何者有關？", o: ["械鬥平息", "水利建設", "官方褒獎", "開路紀念"], a: 2 },
+                "雙溪三忠廟": { q: "雙溪三忠廟主要供奉哪三位宋代忠臣？", o: ["岳飛、關羽、張飛", "文天祥、陸秀夫、張世傑", "諸葛亮、劉備、關羽", "屈原、伍子胥、比干"], a: 1 },
+                "林益和堂": { q: "林益和堂過去是雙溪地區重要的何種店舖？", o: ["中藥鋪", "布莊", "米行", "雜貨店"], a: 0 },
+                "渡船頭": { q: "雙溪的渡船頭主要位於哪兩條溪的匯流處附近？", o: ["基隆河、大漢溪", "平林溪、牡丹溪", "新店溪、景美溪", "冬山河、蘭陽溪"], a: 1 },
+                "周家古厝": { q: "關於雙溪地區周家古厝和者敘述正確？", o: ["建材包含砂岩紅磚", "周杰倫的房產", "五層樓建築", "希臘式風格建築"], a: 0 },
+                "長安老街": { q: "雙溪長安老街過去因何種產業而繁榮？", o: ["礦業", "茶葉", "樟腦", "漁業"], a: 0 },
+                "連舉人厝": { q: "連舉人厝正廳門上懸掛的匾額是？", o: ["文魁", "文青", "文才", "文舉"], a: 0 },
+                "蔴竹坑福德祠": { q: "福德祠主要供奉的神祇是？", o: ["媽祖", "土地公", "關公", "觀音菩薩"], a: 1 },
+                "淡蘭古道": { q: "淡蘭古道是早期連接臺灣何處的重要路徑？", o: ["淡水與蘭陽平原", "台北與台中", "台南與高雄", "花蓮與台東"], a: 0 },
+                "虎豹潭": { q: "虎豹潭名稱的由來，據說與潭邊的什麼有關？", o: ["動物形狀的岩石", "曾有虎豹出沒", "水流聲似虎豹", "當地部落圖騰"], a: 0 },
+                "不厭亭": { q: "不厭亭位於新北市雙溪區與九份交界，以何種景觀聞名？", o: ["海景", "山景公路", "夜景", "湖景"], a: 1 },
+                "雙溪荷花園": { q: "雙溪荷花園的最佳賞花季節通常是？", o: ["春季", "夏季", "秋季", "冬季"], a: 1 },
+            }
+        };
+        const DICE_ICONS = ["fa-dice-d6", "fa-dice-one", "fa-dice-two", "fa-dice-three", "fa-dice-four", "fa-dice-five", "fa-dice-six"];
+        let audioCtx; // For Web Audio API
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser");
+                    return null;
+                }
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            gainNode.gain.setValueAtTime(0.1, ctx.currentTime); // Volume
+
+            if (type === 'correct') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                oscillator.frequency.linearRampToValueAtTime(783.99, ctx.currentTime + 0.15); // G5
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.4);
+            } else if (type === 'incorrect') {
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(349.23, ctx.currentTime); // F4
+                oscillator.frequency.linearRampToValueAtTime(261.63, ctx.currentTime + 0.2); // C4
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.5);
+            }
+        }
+
+
+        const updateGameMessage = (message) => {
+            gameMessageElement.style.opacity = '0';
+            setTimeout(() => {
+                gameMessageElement.textContent = message;
+                gameMessageElement.style.opacity = '1';
+            }, 150);
+        };
+
+        const initBoardPath = () => {
+            gameState.boardPath = [];
+            const squareElements = boardPathContainer.querySelectorAll('.board-square');
+            squareElements.forEach((el, index) => {
+                const locationData = { 
+                    element: el, 
+                    name: el.dataset.location, 
+                    type: el.dataset.type 
+                };
+                gameState.boardPath.push(locationData);
+                if (locationData.type === 'end') {
+                    gameState.endSquareIndex = index;
+                }
+            });
+        };
+        
+        const setupNameInputsUI = (count) => {
+            playerNameInputsDiv.innerHTML = '';
+            if (count > 0) {
+                for (let i = 1; i <= count; i++) {
+                    const entryDiv = document.createElement('div');
+                    entryDiv.className = 'player-name-entry';
+
+                    const colorIndicator = document.createElement('span');
+                    colorIndicator.className = 'player-color-indicator inline-block w-4 h-4 rounded-full shrink-0';
+                    colorIndicator.style.backgroundColor = gameState.playerColors[(i - 1) % gameState.playerColors.length];
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `player-name-input-${i}`;
+                    input.placeholder = `玩家 ${i} 名稱`;
+                    input.className = 'player-name-input';
+                    
+                    entryDiv.appendChild(colorIndicator);
+                    entryDiv.appendChild(input);
+                    playerNameInputsDiv.appendChild(entryDiv);
+                }
+                playerNameSetupDiv.style.display = 'block';
+            } else {
+                playerNameSetupDiv.style.display = 'none';
+            }
+        };
+
+        const initPlayers = (count) => {
+            document.querySelectorAll('.player').forEach(p => p.remove());
+            playerControlsContainer.innerHTML = '';
+            gameState.players = {};
+            for (let i = 1; i <= count; i++) {
+                const nameInput = el(`player-name-input-${i}`);
+                const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `玩家 ${i}`;
+
+                const playerToken = document.createElement('div');
+                playerToken.id = `player${i}-token`;
+                playerToken.className = 'player';
+                playerToken.style.backgroundColor = gameState.playerColors[(i-1) % gameState.playerColors.length];
+                playerToken.textContent = i;
+                boardPathContainer.appendChild(playerToken);
+                
+                const playerInfoBox = document.createElement('div');
+                playerInfoBox.id = `player${i}-infobox`;
+                playerInfoBox.className = 'player-info-box';
+                playerInfoBox.innerHTML = `<div class="flex items-center mb-0.5"><div class="player-color-indicator" style="background-color: ${gameState.playerColors[(i-1) % gameState.playerColors.length]}"></div><div class="font-bold">${playerName}</div></div><div>金幣: <span id="player${i}-money">1000</span></div>`;
+                playerControlsContainer.appendChild(playerInfoBox);
+
+                gameState.players[i] = { 
+                    id: i, name: playerName, position: 0, money: 1000, 
+                    color: gameState.playerColors[(i-1) % gameState.playerColors.length],
+                    tokenElement: playerToken, infoBoxElement: playerInfoBox
+                };
+            }
+            positionPlayers();
+            updateAllMoneyDisplays();
+        };
+
+        const positionPlayers = () => {
+            const squareCssSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--square-size').replace('px',''));
+            const tokenCssSize = clamp(18, 0.025 * window.innerWidth, 22); // From CSS
+            Object.values(gameState.players).forEach((playerData) => {
+                const playerToken = playerData.tokenElement;
+                const squareData = gameState.boardPath[playerData.position];
+                if (!playerToken || !squareData || !squareData.element) return;
+
+                const squareElement = squareData.element;
+                const playersOnThisSquare = Object.values(gameState.players).filter(p => p.position === playerData.position);
+                const playerIndexOnSquare = playersOnThisSquare.findIndex(p => p.tokenElement === playerToken);
+                
+                const itemsPerRow = Math.min(2, Math.ceil(Math.sqrt(playersOnThisSquare.length)));
+                const col = playerIndexOnSquare % itemsPerRow;
+                const row = Math.floor(playerIndexOnSquare / itemsPerRow);
+                const gap = 3; 
+                
+                const totalWidthTakenByTokens = itemsPerRow * tokenCssSize + (itemsPerRow - 1) * gap;
+                const baseOffsetX = (squareElement.offsetWidth - totalWidthTakenByTokens) / 2;
+                const totalHeightTakenByTokens = Math.ceil(playersOnThisSquare.length / itemsPerRow) * tokenCssSize + (Math.ceil(playersOnThisSquare.length / itemsPerRow)-1)*gap;
+                const baseOffsetY = (squareElement.offsetHeight - totalHeightTakenByTokens) / 2 + 5; 
+
+                playerToken.style.top = `${squareElement.offsetTop + baseOffsetY + (row * (tokenCssSize + gap))}px`;
+                playerToken.style.left = `${squareElement.offsetLeft + baseOffsetX + (col * (tokenCssSize + gap))}px`;
+            });
+        };
+        function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
+
+        const updatePlayerMoneyDisplay = (playerId) => {
+            const moneyElement = el(`player${playerId}-money`);
+            if (moneyElement && gameState.players[playerId]) moneyElement.textContent = gameState.players[playerId].money;
+        };
+        const updateAllMoneyDisplays = () => Object.keys(gameState.players).forEach(pId => updatePlayerMoneyDisplay(parseInt(pId)));
+
+        const highlightCurrentPlayerInfoBox = () => {
+            Object.values(gameState.players).forEach(player => player.infoBoxElement.classList.remove('active'));
+            if (gameState.players[gameState.currentPlayer]) {
+                 gameState.players[gameState.currentPlayer].infoBoxElement.classList.add('active');
+            }
+        };
+
+        const rollDice = async () => {
+            if (gameState.diceRolling || !gameState.gameStarted) return;
+            gameState.diceRolling = true;
+            diceElement.classList.add('rolling');
+            diceElement.innerHTML = `<i class="fas fa-dice fa-spin"></i>`;
+            
+            const player = gameState.players[gameState.currentPlayer];
+            updateGameMessage(`${player.name} 正在擲骰子...`);
+            gameState.boardPath.forEach(pos => pos.element?.classList.remove('highlight'));
+
+            await new Promise(resolve => setTimeout(resolve, 1200)); 
+
+            const roll = Math.floor(Math.random() * 6) + 1;
+            diceElement.classList.remove('rolling');
+            diceElement.innerHTML = `<i class="fas ${DICE_ICONS[roll]}"></i>`;
+            updateGameMessage(`${player.name} 擲出 ${roll}點...`);
+            
+            const startPosition = player.position;
+            let hasWon = false;
+
+            for (let i = 1; i <= roll; i++) {
+                let currentStepPos = startPosition + i;
+                if (currentStepPos >= gameState.endSquareIndex) {
+                    player.position = gameState.endSquareIndex;
+                    hasWon = true;
+                } else {
+                    player.position = currentStepPos % gameState.boardPath.length; 
+                }
+                positionPlayers();
+                if (hasWon) {
+                    await new Promise(resolve => setTimeout(resolve, 300)); // Short delay for final step to end
+                    break; 
+                }
+                await new Promise(resolve => setTimeout(resolve, 250)); 
+            }
+            
+            const landedSquareData = gameState.boardPath[player.position];
+            landedSquareData.element?.classList.add('highlight');
+
+            if (hasWon) {
+                handleWin();
+            } else {
+                updateGameMessage(`${player.name} 抵達 ${landedSquareData.name}`);
+                setTimeout(() => handleSquareAction(landedSquareData), 800);
+            }
+        };
+        
+        function handleWin() {
+            const player = gameState.players[gameState.currentPlayer];
+            const endSquareData = gameState.boardPath[gameState.endSquareIndex];
+            player.money += 300; // Winner's bonus (as per original end square logic)
+            updatePlayerMoneyDisplay(gameState.currentPlayer);
+            updateGameMessage(`🎉 ${player.name} 抵達終點 ${endSquareData.name} 並獲勝！🎉`);
+
+            diceElement.style.pointerEvents = 'none'; // Disable further rolls
+            diceElement.innerHTML = `<i class="fas fa-trophy"></i>`;
+            gameState.gameStarted = false; 
+
+            showEventCardWithCustomMessage(
+                `🎉 恭喜 ${player.name}！ 🎉`,
+                `你已成功抵達 ${endSquareData.name}，成為雙溪步佈走讀神！獲得 300 金幣獎勵！遊戲結束。`
+            );
+        }
+        
+        function handleSquareAction(squareData) {
+            if (!gameState.gameStarted && squareData.type !== 'end') return; // Prevent actions if game ended by win but somehow this is called
+
+            switch(squareData.type) {
+                case 'chance': case 'fate':
+                    showEvent(squareData.type); break;
+                case 'rest': case 'start':
+                    showRestEvent(squareData.name, squareData.type); break;
+                case 'attraction':
+                    showQuiz(squareData.name); break;
+                case 'end': // Should be caught by handleWin in rollDice, but as a fallback.
+                    handleWin();
+                    break;
+                default:
+                    setTimeout(nextPlayerTurn, 700); 
+            }
+        }
+        
+        function showEventCardWithCustomMessage(title, description) {
+            eventTitleElement.textContent = title;
+            eventDescriptionElement.textContent = description;
+            showPopup(eventCardElement);
+            // The eventCloseButton will call nextPlayerTurn, which handles game end state
+        }
+
+        const nextPlayerTurn = () => {
+            const previousPlayer = gameState.players[gameState.currentPlayer];
+            if (previousPlayer && gameState.boardPath[previousPlayer.position]) {
+                 gameState.boardPath[previousPlayer.position].element?.classList.remove('highlight');
+            }
+
+            if (!gameState.gameStarted) { // Game has ended or not yet started
+                updateGameMessage('遊戲結束！請選擇人數並點擊「開始遊戲」重新開始。');
+                startGameButton.disabled = false;
+                playerCountSelect.disabled = false;
+                playerNameSetupDiv.style.display = 'block'; // Show name inputs for new game
+                // Clear name inputs
+                playerNameInputsDiv.querySelectorAll('input').forEach(input => input.value = '');
+                diceElement.innerHTML = `<i class="fas fa-dice-d6"></i>`;
+                diceElement.style.pointerEvents = 'auto';
+                currentPlayerIndicator.textContent = "-";
+                currentPlayerNameDisplay.textContent = "等待開始";
+                return;
+            }
+
+            gameState.currentPlayer = (gameState.currentPlayer % gameState.playerCount) + 1;
+            const currentPlayerData = gameState.players[gameState.currentPlayer];
+            currentPlayerIndicator.textContent = currentPlayerData.id;
+            currentPlayerNameDisplay.textContent = currentPlayerData.name;
+
+            updateGameMessage(`輪到 ${currentPlayerData.name} 的回合`);
+            gameState.diceRolling = false;
+            diceElement.innerHTML = `<i class="fas fa-dice-d6"></i>`;
+            highlightCurrentPlayerInfoBox();
+
+            const currentPlayerSquare = gameState.boardPath[currentPlayerData.position];
+            if (currentPlayerSquare && currentPlayerSquare.element) {
+                currentPlayerSquare.element.classList.add('highlight');
+            }
+        };
+        
+        const showPopup = (element) => {
+            element.style.display = 'flex'; 
+            setTimeout(() => element.classList.add('visible'), 10);
+        };
+
+        const hidePopup = (element, callback) => {
+            element.classList.remove('visible');
+            setTimeout(() => {
+                element.style.display = 'none';
+                if (callback) callback();
+            }, 300); 
+        };
+
+        const showEvent = (type) => {
+            let events, titlePrefix;
+            const isDoubled = Math.random() < CHANCE_OF_DOUBLING; 
+
+            if (type === 'chance') { 
+                titlePrefix = "機會";
+                events = [ { title: '平林溪釣魚樂', d: '釣到大魚，獲 # 金幣', m: 200 }, { title: '淨溪活動獎勵', d: '參加淨溪，獲環保獎 # 金幣', m: 150 }, { title: '牡丹溪畔好心情', d: '踏青愉快，獲 # 金幣', m: 100 }, { title: '溪水突漲損失', d: '裝備被沖走，損 # 金幣', m: -120 }, { title: '遺失錢包', d: '遊玩不慎遺失錢包，損 # 金幣', m: -80 }, { title: '發現秘境打卡', d: '拍照打卡獲社群獎 # 金幣', m: 180 }];
+            } else { // fate
+                titlePrefix = "命運";
+                events = [ { title: '毛蟹大豐收', d: '毛蟹豐收，販售獲利 # 金幣', m: 250 }, { title: '山藥田幫手酬勞', d: '協助收成山藥，獲報酬 # 金幣', m: 180 }, { title: '野薑花季代言', d: '擔任推廣大使，獲代言費 # 金幣', m: 120 }, { title: '颱風農損修繕', d: '颱風造成農損，支付修繕費 # 金幣', m: -150 }, { title: '特產行銷成功獎', d: '成功行銷特產，獲獎金 # 金幣', m: 200 }, { title: '農具損壞維修', d: '農具損壞，修理花費 # 金幣', m: -100 }];
+            }
+            const randomEvent = {...events[Math.floor(Math.random() * events.length)]}; // Shallow copy
+            let actualMoney = randomEvent.m;
+            let titleSuffix = "";
+
+            if (isDoubled && randomEvent.m !== 0) { 
+                actualMoney *= 2; 
+                titleSuffix = " (雙倍效果!)"; 
+            }
+            
+            randomEvent.d = randomEvent.d.replace('#', Math.abs(actualMoney));
+            eventTitleElement.textContent = `${titlePrefix}: ${randomEvent.title}${titleSuffix}`;
+            eventDescriptionElement.textContent = randomEvent.d;
+            
+            const player = gameState.players[gameState.currentPlayer];
+            player.money += actualMoney;
+            updatePlayerMoneyDisplay(gameState.currentPlayer);
+            // Append to existing message from rollDice
+            let currentMsg = gameMessageElement.textContent;
+            currentMsg += ` ${actualMoney >= 0 ? '獲得' : '損失'} ${Math.abs(actualMoney)} 金幣。`;
+            updateGameMessage(currentMsg);
+
+
+            showPopup(eventCardElement);
+        };
+
+        const showRestEvent = (locationName, type) => {
+            // Start square pass-through, handled by not doing anything special after first turn.
+            if (type === 'start' && gameState.players[gameState.currentPlayer].position === 0 && 
+                Object.values(gameState.players).some(p => p.position > 0 || Object.keys(gameState.players).length === 0)) {
+                // If it's not the absolute first move of the game for anyone, and player lands on start
+                updateGameMessage(`${gameState.players[gameState.currentPlayer].name} 回到起點，休息一下。`);
+                // No special money change for passing start, unless specified.
+                showEventCardWithCustomMessage("回到起點", `${locationName} - 稍作停留，養精蓄銳。`);
+                return;
+            }
+
+            let eventData = { title: `${locationName} 休息一下`, description: `在 ${locationName} 稍作停留，養精蓄銳。`, money: 0 };
+            let baseMoney = 0;
+            let isMoneyRest = false;
+
+            if (locationName === '海山餅店') { baseMoney = 100; eventData.title = '海山餅店小憩'; eventData.description = '品嚐香濃寒天布丁蛋糕，恢復元氣，獲 # 金幣。'; isMoneyRest = true;}
+            else if (locationName === '蔡冰雪花冰') { baseMoney = 120; eventData.title = '蔡冰雪花冰透心涼'; eventData.description = '享用美味花生雪花冰，暑氣全消，獲 # 金幣。'; isMoneyRest = true;}
+            else if (locationName === '毛蟹盛') { baseMoney = 150; eventData.title = '毛蟹盛宴'; eventData.description = '品嚐肥美毛蟹，精力充沛，獲 # 金幣。'; isMoneyRest = true;}
+            
+            let actualMoney = baseMoney;
+            let titleSuffix = "";
+            if (isMoneyRest && Math.random() < CHANCE_OF_DOUBLING) {
+                actualMoney *= 2;
+                titleSuffix = " (雙倍獎勵!)";
+            }
+            eventData.money = actualMoney;
+            eventData.description = eventData.description.replace('#', actualMoney);
+            
+            eventTitleElement.textContent = eventData.title + titleSuffix;
+            eventDescriptionElement.textContent = eventData.description;
+
+            if (eventData.money > 0) { 
+                gameState.players[gameState.currentPlayer].money += eventData.money; 
+                updatePlayerMoneyDisplay(gameState.currentPlayer);
+                 // Append to existing message
+                let currentMsg = gameMessageElement.textContent;
+                currentMsg += ` 獲得 ${eventData.money} 金幣。`;
+                updateGameMessage(currentMsg);
+            }
+            showPopup(eventCardElement);
+        };
+
+        const showQuiz = (locationName) => {
+            const quiz = gameState.quizData[locationName];
+            if (!quiz) { console.warn("No quiz for: " + locationName); nextPlayerTurn(); return; }
+            gameState.currentQuiz = { ...quiz, location: locationName }; // Shallow copy
+            quizTitleElement.textContent = `${locationName} 問答`;
+            quizQuestionElement.textContent = quiz.q;
+            quizOptionsElement.innerHTML = '';
+            quiz.o.forEach((optionText, index) => {
+                const button = document.createElement('button');
+                button.textContent = `${String.fromCharCode(65 + index)}. ${optionText}`;
+                button.dataset.index = index;
+                button.addEventListener('click', handleQuizAnswer);
+                quizOptionsElement.appendChild(button);
+            });
+            quizFeedbackElement.textContent = '';
+            quizFeedbackElement.style.color = ''; 
+            showPopup(quizCardElement);
+        };
+
+        function handleQuizAnswer(event) {
+            const selectedIndex = parseInt(event.target.dataset.index);
+            const quiz = gameState.currentQuiz;
+            const player = gameState.players[gameState.currentPlayer];
+            let feedback = "";
+            let moneyChange = 0;
+
+            if (selectedIndex === quiz.a) {
+                playSound('correct');
+                feedback = "答對了！真厲害！獲得 50 金幣！";
+                moneyChange = 50;
+                quizFeedbackElement.style.color = 'green';
+            } else {
+                playSound('incorrect');
+                feedback = `答錯了，正確答案是 ${String.fromCharCode(65 + quiz.a)}. 損失 20 金幣。`;
+                moneyChange = -20;
+                quizFeedbackElement.style.color = 'red';
+            }
+            player.money += moneyChange;
+            updatePlayerMoneyDisplay(gameState.currentPlayer);
+            quizFeedbackElement.textContent = feedback;
+            
+            quizOptionsElement.querySelectorAll('button').forEach(btn => btn.disabled = true);
+
+            setTimeout(() => {
+                hidePopup(quizCardElement, nextPlayerTurn);
+            }, 2200);
+        }
+
+        // Event Listeners
+        playerCountSelect.addEventListener('change', () => {
+            setupNameInputsUI(parseInt(playerCountSelect.value));
+        });
+
+        startGameButton.addEventListener('click', () => {
+            gameState.playerCount = parseInt(playerCountSelect.value);
+            if (gameState.playerCount < 1) {
+                updateGameMessage("請選擇至少一位玩家！");
+                return;
+            }
+            initPlayers(gameState.playerCount);
+            gameState.gameStarted = true;
+            gameState.currentPlayer = 1; // Start with player 1
+            
+            const firstPlayer = gameState.players[1];
+            currentPlayerIndicator.textContent = firstPlayer.id;
+            currentPlayerNameDisplay.textContent = firstPlayer.name;
+            
+            updateGameMessage(`遊戲開始！輪到 ${firstPlayer.name}`);
+            diceElement.innerHTML = `<i class="fas fa-dice-d6"></i>`;
+            diceElement.style.pointerEvents = 'auto';
+            highlightCurrentPlayerInfoBox();
+            
+            gameState.boardPath.forEach(pos => pos.element?.classList.remove('highlight'));
+            gameState.boardPath[0]?.element?.classList.add('highlight'); // Highlight start
+            
+            playerCountSelect.disabled = true; 
+            startGameButton.disabled = true;
+            playerNameSetupDiv.style.display = 'none'; // Hide name inputs during game
+        });
+
+        diceElement.addEventListener('click', rollDice);
+        
+        eventCloseButton.addEventListener('click', () => {
+            hidePopup(eventCardElement, nextPlayerTurn);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initBoardPath(); 
+            playerCountSelect.value = "2"; // Default player count
+            setupNameInputsUI(2); // Setup inputs for default count
+            currentPlayerIndicator.textContent = "-";
+            currentPlayerNameDisplay.textContent = "等待開始";
+            updateGameMessage('選擇人數，輸入名稱(選填)，並點擊「開始遊戲」！');
+            // Ensure dice is clickable if game is not started (it is by default)
+            diceElement.style.pointerEvents = 'auto';
+        });
+        window.addEventListener('resize', () => { if (gameState.gameStarted || Object.keys(gameState.players).length > 0) positionPlayers(); });
+    </script>
+</body>
+</html>
