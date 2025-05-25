@@ -59,6 +59,8 @@
             --quiz-option-hover-bg: #eef;
             --square-end-bg: #d1c4e9 !important; 
             --square-end-border: 3px solid #7e57c2 !important;
+            --info-button-bg: var(--accent-color-1);
+            --info-button-text: var(--text-light);
         }
 
         body.dark-mode {
@@ -101,6 +103,8 @@
             --quiz-option-hover-bg: #2c7a51;
             --square-end-bg: #512da8 !important; 
             --square-end-border: 3px solid #9575cd !important;
+            --info-button-bg: var(--accent-color-2);
+            --info-button-text: var(--text-dark);
         }
 
         body {
@@ -541,7 +545,7 @@
         }
         .popup-card.visible {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
+            transform: translate(-50%, -50%) scale(1.2); /* MODIFIED: Increased scale */
             pointer-events: auto;
         }
          .popup-card h3 { color: var(--text-subheading-color); }
@@ -621,6 +625,31 @@
         }
         .game-wrapper h1 { color: var(--text-heading-color); }
 
+        #info-link-button { /* NEW: Info button styles */
+            position: fixed;
+            top: 60px; /* Position below theme-toggle: 10px (theme-toggle top) + 40px (theme-toggle height) + 10px (spacing) */
+            right: 10px;
+            background-color: var(--info-button-bg);
+            color: var(--info-button-text);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 999; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
+        }
+        #info-link-button:hover {
+            transform: scale(1.1);
+            filter: brightness(110%);
+        }
+
+
         #wheel-container {
             width: 220px; 
             height: 220px;
@@ -681,6 +710,15 @@
     <button id="theme-toggle" title="切換色彩模式">
         <i class="fas fa-sun"></i>
     </button>
+    <!-- NEW: Info link button -->
+    <a href="https://dguidedwalks.tw/%E6%95%B8%E4%BD%8D%E8%B5%B0%E8%AE%80%E5%9C%B0%E5%9C%96/%E5%8C%97%E9%83%A8%E6%99%AF%E9%BB%9E/%E6%96%B0%E5%8C%97%E5%B8%82%E4%B9%9D%E5%A4%A7%E5%88%86%E5%8D%80/%E7%91%9E%E8%8A%B3%E5%88%86%E5%8D%80" 
+       id="info-link-button" 
+       target="_blank" 
+       rel="noopener noreferrer"
+       title="步佈台灣｜瑞芳分區｜來【頂雙溪】慢漫遊">
+        <i class="fas fa-info-circle"></i>
+    </a>
+
     <audio id="bg-music" src="music/background.mp3" loop></audio>
 
     <div class="game-wrapper">
@@ -719,8 +757,7 @@
             <div class="controls-top-bar">
                 <div class="game-title-container">遊戲控制板</div>
                 <div class="music-controls flex items-center gap-2">
-                    <button id="play-music-button" title="播放音樂"><i class="fas fa-play"></i></button>
-                    <button id="pause-music-button" title="暫停音樂"><i class="fas fa-pause"></i></button>
+                    <button id="toggle-music-button" title="播放音樂"><i class="fas fa-play"></i></button> 
                     <label for="volume-slider" class="sr-only">音量</label>
                     <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" title="調整音量">
                 </div>
@@ -818,6 +855,7 @@
         const playerControlsContainer = el('player-controls'), boardPathContainer = el('board-path-container');
         const playerNameSetupDiv = el('player-name-setup'), playerNameInputsDiv = el('player-name-inputs');
         const themeToggleButton = el('theme-toggle');
+        const infoLinkButton = el('info-link-button'); // NEW: Info link button
         // Popups
         const eventCardElement = el('event-card'), eventTitleElement = el('event-title');
         const eventDescriptionElement = el('event-description'), eventCloseButton = el('event-close');
@@ -830,8 +868,9 @@
         const chanceTaskTextElement = el('chance-task-text'), chanceTaskOptionsElement = el('chance-task-options');
         const chanceTaskFeedbackElement = el('chance-task-feedback'), chanceTaskCloseButton = el('chance-task-close');
         // Music
-        const bgMusic = el('bg-music'), playMusicButton = el('play-music-button'), pauseMusicButton = el('pause-music-button');
+        const bgMusic = el('bg-music'); 
         const volumeSlider = el('volume-slider');
+        const toggleMusicButton = el('toggle-music-button'); 
 
         let wheelCtx = fateWheelCanvas.getContext('2d');
         let currentWheelAngle = 0; 
@@ -988,8 +1027,6 @@
             diceElement.style.pointerEvents = 'auto'; 
             playerCountSelect.disabled = false;
             startGameButton.disabled = false;
-            // Don't call setupNameInputsUI here, let the main message prompt it.
-            // Or if you always want it visible before start:
             setupNameInputsUI(parseInt(playerCountSelect.value)); 
             currentPlayerIndicator.textContent = "-";
             currentPlayerNameDisplay.textContent = "等待開始";
@@ -1305,11 +1342,18 @@
             if (isDark) { document.body.classList.add('dark-mode'); themeToggleButton.innerHTML = '<i class="fas fa-moon"></i>'; localStorage.setItem('theme', 'dark'); } 
             else { document.body.classList.remove('dark-mode'); themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>'; localStorage.setItem('theme', 'light'); }
             drawFateWheel(fateWheelOutcomes); 
-            updateVolumeSliderFill(); // Ensure slider fill updates with theme
+            updateVolumeSliderFill(); 
         }
         themeToggleButton.addEventListener('click', () => {
             audioManager.play('buttonClick').then(() => { setDarkTheme(!document.body.classList.contains('dark-mode')); });
         });
+        // NEW: Event listener for info button click sound
+        if (infoLinkButton) {
+            infoLinkButton.addEventListener('click', () => {
+                audioManager.play('buttonClick');
+            });
+        }
+
 
         function drawFateWheel(segments) { 
             if (!wheelCtx) wheelCtx = fateWheelCanvas.getContext('2d');
@@ -1347,12 +1391,11 @@
             const anglePerSegmentDeg = 360 / fateWheelOutcomes.length;
             
             const targetSegmentMiddleAngle = (randomStopSegment * anglePerSegmentDeg) + (anglePerSegmentDeg / 2);
-            const desiredAngle = 270 - targetSegmentMiddleAngle; // Align middle of segment to 12 o'clock (270 deg)
+            const desiredAngle = 270 - targetSegmentMiddleAngle; 
 
-            // Calculate rotation needed to reach this desiredAngle from current visual angle's normalized position
             const currentNormalizedAngle = currentWheelAngle % 360;
             let rotationDelta = desiredAngle - currentNormalizedAngle;
-            if (rotationDelta < -180) rotationDelta += 360; // Ensure shortest path if crossing 0/360
+            if (rotationDelta < -180) rotationDelta += 360; 
             if (rotationDelta > 180) rotationDelta -= 360;
 
             const finalRotation = currentWheelAngle + (randomExtraRotations * 360) + rotationDelta;
@@ -1452,14 +1495,49 @@
             }, 1000); 
         }
 
-        playMusicButton.addEventListener('click', () => {
-            audioManager.play('buttonClick');
-            bgMusic.play().catch(e => console.error("Error playing music:", e));
-        });
-        pauseMusicButton.addEventListener('click', () => {
-            audioManager.play('buttonClick');
-            bgMusic.pause();
-        });
+        if (toggleMusicButton) {
+            const musicIcon = toggleMusicButton.querySelector('i');
+
+            toggleMusicButton.addEventListener('click', () => {
+                audioManager.play('buttonClick');
+                if (bgMusic.paused) {
+                    bgMusic.play().catch(e => console.error("Error playing music:", e));
+                } else {
+                    bgMusic.pause();
+                }
+            });
+
+            bgMusic.addEventListener('play', () => {
+                if (musicIcon) {
+                    musicIcon.classList.remove('fa-play');
+                    musicIcon.classList.add('fa-pause');
+                }
+                toggleMusicButton.title = "暫停音樂";
+            });
+
+            bgMusic.addEventListener('pause', () => {
+                if (musicIcon) {
+                    musicIcon.classList.remove('fa-pause');
+                    musicIcon.classList.add('fa-play');
+                }
+                toggleMusicButton.title = "播放音樂";
+            });
+            
+            if (bgMusic.paused) {
+                if (musicIcon) {
+                    musicIcon.classList.remove('fa-pause');
+                    musicIcon.classList.add('fa-play');
+                }
+                toggleMusicButton.title = "播放音樂";
+            } else {
+                 if (musicIcon) {
+                    musicIcon.classList.remove('fa-play');
+                    musicIcon.classList.add('fa-pause');
+                }
+                toggleMusicButton.title = "暫停音樂";
+            }
+        }
+
 
         function updateVolumeSliderFill() {
             const value = parseFloat(volumeSlider.value);
@@ -1487,7 +1565,7 @@
         startGameButton.addEventListener('click', () => {
             audioManager.play('buttonClick').then(() => { 
                 resetGameState(); 
-                updateGameMessage('選擇人數並點擊「開始遊戲」！'); // Message after reset
+                updateGameMessage('選擇人數並點擊「開始遊戲」！'); 
                 
                 gameState.playerCount = parseInt(playerCountSelect.value);
                 if (gameState.playerCount < 1 || gameState.playerCount > 12) { updateGameMessage("請選擇 1 至 12 位玩家！"); return; }
@@ -1527,6 +1605,23 @@
                 volumeSlider.value = 0.5;
             }
             updateVolumeSliderFill(); 
+
+            if (toggleMusicButton) {
+                const musicIcon = toggleMusicButton.querySelector('i');
+                if (bgMusic.paused) {
+                    if (musicIcon) {
+                        musicIcon.classList.remove('fa-pause');
+                        musicIcon.classList.add('fa-play');
+                    }
+                    toggleMusicButton.title = "播放音樂";
+                } else {
+                    if (musicIcon) {
+                        musicIcon.classList.remove('fa-play');
+                        musicIcon.classList.add('fa-pause');
+                    }
+                    toggleMusicButton.title = "暫停音樂";
+                }
+            }
         });
         window.addEventListener('resize', () => { 
             if (gameState.gameStarted || Object.keys(gameState.players).length > 0) positionPlayers(); 
