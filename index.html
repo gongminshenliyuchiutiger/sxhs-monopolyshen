@@ -649,6 +649,72 @@
             filter: brightness(110%);
         }
 
+        /* 管理員模式按鈕與管理面板樣式 */
+        #admin-mode-button { 
+            position: fixed;
+            top: 110px;
+            right: 10px;
+            background-color: var(--accent-color-1);
+            color: var(--text-light);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 999; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
+        }
+        #admin-mode-button:hover {
+            transform: scale(1.1);
+            filter: brightness(110%);
+        }
+        body.dark-mode #admin-mode-button {
+            background-color: var(--accent-color-2);
+            color: #1a202c;
+        }
+
+        .admin-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .admin-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .admin-modal-content {
+            background-color: var(--popup-bg);
+            color: var(--text-general);
+            border-radius: 16px;
+            border: 2px solid var(--board-border-color);
+            box-shadow: 0 20px 45px rgba(0,0,0,0.35);
+            width: 100%;
+            max-width: 860px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
+        }
+        .admin-modal-overlay.active .admin-modal-content {
+            transform: scale(1);
+        }
+
         #wheel-container {
             width: 220px; 
             height: 220px;
@@ -745,6 +811,9 @@
        title="步佈台灣｜瑞芳分區｜來【頂雙溪】慢漫遊">
         <i class="fas fa-info-circle"></i>
     </a>
+    <button id="admin-mode-button" title="管理員模式（題庫管理）">
+        <i class="fas fa-user-shield"></i>
+    </button>
 
     <audio id="bg-music" src="music/background.mp3" loop></audio>
 
@@ -875,6 +944,154 @@
     
     <!-- NEW: Mascot element -->
     <img id="mascot" src="image/LiyuChillGuy.svg" alt="吉祥物 LiyuChillGuy" title="成為漫遊雙溪步佈走讀神，不再只是夢想！">
+
+    <!-- 管理員身分驗證彈窗 -->
+    <div id="admin-login-modal" class="admin-modal-overlay">
+        <div class="admin-modal-content" style="max-width: 380px;">
+            <div class="p-4 px-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-base font-bold flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <i class="fas fa-shield-halved"></i> 管理員身分驗證
+                </h3>
+                <button id="admin-login-close" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-5">
+                <label for="admin-password-input" class="block text-sm font-medium mb-2">請輸入管理密碼：</label>
+                <input type="password" id="admin-password-input" placeholder="請輸入密碼" 
+                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 mb-2">
+                <p id="admin-login-error" class="text-red-500 text-xs mb-3 hidden">密碼錯誤，請重新輸入！</p>
+                <div class="flex gap-2">
+                    <button id="admin-login-cancel" class="w-1/3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        取消
+                    </button>
+                    <button id="admin-login-submit" class="w-2/3 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm transition">
+                        驗證進入
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 題庫管理主面板 -->
+    <div id="admin-panel-modal" class="admin-modal-overlay">
+        <div class="admin-modal-content">
+            <!-- 標題欄 -->
+            <div class="p-4 px-6 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2 bg-emerald-50/50 dark:bg-slate-800">
+                <div class="flex items-center gap-3">
+                    <span class="p-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg">
+                        <i class="fas fa-book-bookmark text-lg"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            漫遊雙溪題庫管理中心
+                            <span class="text-xs px-2 py-0.5 rounded bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-normal">管理員模式</span>
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" id="admin-quiz-summary">載入題庫中...</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="admin-reset-default-btn" class="px-2.5 py-1.5 text-xs font-medium border border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-lg transition" title="還原至系統原始預設題庫">
+                        <i class="fas fa-rotate-left mr-1"></i>還原預設
+                    </button>
+                    <button id="admin-logout-btn" class="px-2.5 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt mr-1"></i>登出
+                    </button>
+                    <button id="admin-panel-close" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 工具列 (篩選與新增) -->
+            <div class="p-3 px-6 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900">
+                <div class="flex items-center gap-2 flex-grow max-w-sm">
+                    <label for="admin-category-filter" class="text-xs font-medium whitespace-nowrap text-gray-600 dark:text-gray-300">景點篩選：</label>
+                    <select id="admin-category-filter" class="px-2.5 py-1.5 text-xs md:text-sm border rounded-lg bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 flex-grow">
+                        <!-- 動態填充分類 -->
+                    </select>
+                </div>
+                <button id="admin-add-quiz-btn" class="px-3.5 py-1.5 text-xs md:text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition flex items-center gap-1.5">
+                    <i class="fas fa-plus"></i> 新增題目
+                </button>
+            </div>
+
+            <!-- 新增/編輯題目表單區塊 (可收合) -->
+            <div id="admin-edit-form-container" class="p-4 px-6 border-b border-green-200 dark:border-green-900 bg-green-50/70 dark:bg-slate-800/80 hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 id="admin-form-title" class="font-bold text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                        <i class="fas fa-pen-to-square"></i> 編輯題目
+                    </h4>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">* 請點選正確答案之單選鈕</span>
+                </div>
+                <form id="admin-quiz-form" class="space-y-3">
+                    <input type="hidden" id="edit-original-cat">
+                    <input type="hidden" id="edit-original-index">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">所屬景點主題</label>
+                        <select id="edit-quiz-category" class="w-full px-3 py-1.5 text-xs md:text-sm border rounded-lg bg-white dark:bg-slate-900 border-gray-300 dark:border-gray-600" required>
+                            <!-- 分類項目 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">題目內容 (問題敘述)</label>
+                        <textarea id="edit-quiz-q" rows="2" class="w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white dark:bg-slate-900 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500" required placeholder="請輸入題目內容..."></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div class="p-2 border rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-gray-600 dark:text-gray-400">選項 A</label>
+                                <label class="text-xs text-green-600 dark:text-green-400 cursor-pointer flex items-center gap-1 font-medium">
+                                    <input type="radio" name="correct_answer" value="0" required> 設為正確答案
+                                </label>
+                            </div>
+                            <input type="text" id="edit-opt-0" class="w-full px-2.5 py-1 text-xs border rounded bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-gray-600" required placeholder="選項 A 內容">
+                        </div>
+                        <div class="p-2 border rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-gray-600 dark:text-gray-400">選項 B</label>
+                                <label class="text-xs text-green-600 dark:text-green-400 cursor-pointer flex items-center gap-1 font-medium">
+                                    <input type="radio" name="correct_answer" value="1"> 設為正確答案
+                                </label>
+                            </div>
+                            <input type="text" id="edit-opt-1" class="w-full px-2.5 py-1 text-xs border rounded bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-gray-600" required placeholder="選項 B 內容">
+                        </div>
+                        <div class="p-2 border rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-gray-600 dark:text-gray-400">選項 C</label>
+                                <label class="text-xs text-green-600 dark:text-green-400 cursor-pointer flex items-center gap-1 font-medium">
+                                    <input type="radio" name="correct_answer" value="2"> 設為正確答案
+                                </label>
+                            </div>
+                            <input type="text" id="edit-opt-2" class="w-full px-2.5 py-1 text-xs border rounded bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-gray-600" required placeholder="選項 C 內容">
+                        </div>
+                        <div class="p-2 border rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-bold text-gray-600 dark:text-gray-400">選項 D</label>
+                                <label class="text-xs text-green-600 dark:text-green-400 cursor-pointer flex items-center gap-1 font-medium">
+                                    <input type="radio" name="correct_answer" value="3"> 設為正確答案
+                                </label>
+                            </div>
+                            <input type="text" id="edit-opt-3" class="w-full px-2.5 py-1 text-xs border rounded bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-gray-600" required placeholder="選項 D 內容">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" id="admin-form-cancel" class="px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">
+                            取消
+                        </button>
+                        <button type="submit" class="px-4 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition">
+                            <i class="fas fa-check mr-1"></i> 儲存確認
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 題目列表區 -->
+            <div id="admin-quiz-list" class="p-4 px-6 overflow-y-auto space-y-3 flex-grow max-h-[55vh]">
+                <!-- 動態載入題目卡片 -->
+            </div>
+        </div>
+    </div>
 
 
     <script>
@@ -1024,6 +1241,15 @@
         };
         
         const setupNameInputsUI = (count) => {
+            // 先暫存目前已輸入的名字，避免切換人數時被清空
+            const existingValues = {};
+            for (let i = 1; i <= 12; i++) {
+                const existingInput = el(`player-name-input-${i}`);
+                if (existingInput && existingInput.value.trim()) {
+                    existingValues[i] = existingInput.value.trim();
+                }
+            }
+
             playerNameInputsDiv.innerHTML = '';
             if (count > 0 && !gameState.gameStarted) { 
                 playerNameSetupDiv.style.display = 'block';
@@ -1033,6 +1259,9 @@
                     colorIndicator.style.backgroundColor = gameState.playerColors[(i - 1) % gameState.playerColors.length];
                     const input = document.createElement('input'); input.type = 'text'; input.id = `player-name-input-${i}`;
                     input.placeholder = `玩家 ${i} 名稱`; input.className = 'player-name-input';
+                    if (existingValues[i]) {
+                        input.value = existingValues[i];
+                    }
                     entryDiv.appendChild(colorIndicator); entryDiv.appendChild(input); playerNameInputsDiv.appendChild(entryDiv);
                 }
             } else playerNameSetupDiv.style.display = 'none';
@@ -1066,14 +1295,21 @@
         };
 
 
-        const initPlayers = (count) => {
+        const initPlayers = (count, customNames = []) => {
             document.querySelectorAll('.player').forEach(p => p.remove());
             playerControlsContainer.innerHTML = ''; 
             gameState.players = {};
 
             for (let i = 1; i <= count; i++) {
-                const nameInput = el(`player-name-input-${i}`);
-                const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `玩家 ${i}`;
+                let playerName = `玩家 ${i}`;
+                if (customNames && customNames[i - 1]) {
+                    playerName = customNames[i - 1];
+                } else {
+                    const nameInput = el(`player-name-input-${i}`);
+                    if (nameInput && nameInput.value.trim()) {
+                        playerName = nameInput.value.trim();
+                    }
+                }
                 const playerToken = document.createElement('div'); playerToken.id = `player${i}-token`;
                 playerToken.className = 'player'; playerToken.style.backgroundColor = gameState.playerColors[(i-1)%gameState.playerColors.length];
                 playerToken.textContent = i; boardPathContainer.appendChild(playerToken);
@@ -1644,20 +1880,50 @@
 
         startGameButton.addEventListener('click', () => {
             audioManager.play('buttonClick').then(() => { 
-                resetGameState(); 
-                updateGameMessage('選擇人數並點擊「開始遊戲」！'); 
+                const count = parseInt(playerCountSelect.value);
+                if (count < 1 || count > 12) { updateGameMessage("請選擇 1 至 12 位玩家！"); return; }
                 
-                gameState.playerCount = parseInt(playerCountSelect.value);
-                if (gameState.playerCount < 1 || gameState.playerCount > 12) { updateGameMessage("請選擇 1 至 12 位玩家！"); return; }
-                initPlayers(gameState.playerCount); 
+                // 優先讀取玩家在輸入框輸入的自訂名稱
+                const customNames = [];
+                for (let i = 1; i <= count; i++) {
+                    const input = el(`player-name-input-${i}`);
+                    const name = input && input.value.trim() ? input.value.trim() : `玩家 ${i}`;
+                    customNames.push(name);
+                }
+
+                // 重設棋盤與遊戲狀態
+                gameState.players = {};
+                gameState.currentPlayer = 1;
+                gameState.diceRolling = false; 
+                gameState.currentPlayerGetsExtraRoll = false;
+                gameState.currentQuiz = null;
+                gameState.currentChanceTask = null;
+                currentWheelAngle = 0; 
+                fateWheelCanvas.style.transition = 'none'; 
+                fateWheelCanvas.style.transform = `rotate(0deg)`;
+                requestAnimationFrame(() => { 
+                     fateWheelCanvas.style.transition = 'transform 3.5s cubic-bezier(0.23, 1, 0.32, 1)';
+                });
+
+                document.querySelectorAll('.player').forEach(p => p.remove());
+                playerControlsContainer.innerHTML = '';
+                boardPathContainer.querySelectorAll('.board-square.highlight').forEach(sq => sq.classList.remove('highlight'));
+                diceElement.innerHTML = `<i class="fas fa-dice-d6"></i>`;
+                diceElement.style.pointerEvents = 'auto'; 
+                
+                gameState.playerCount = count;
+                initPlayers(count, customNames); 
                 gameState.gameStarted = true; 
                 
                 const firstPlayer = gameState.players[1];
-                currentPlayerIndicator.textContent = firstPlayer.id; currentPlayerNameDisplay.textContent = firstPlayer.name;
+                currentPlayerIndicator.textContent = firstPlayer.id; 
+                currentPlayerNameDisplay.textContent = firstPlayer.name;
                 updateGameMessage(`遊戲開始！輪到 ${firstPlayer.name}`);
                 highlightCurrentPlayerInfoBox();
                 if(gameState.boardPath[0] && gameState.boardPath[0].element) gameState.boardPath[0].element.classList.add('highlight'); 
-                playerCountSelect.disabled = true; startGameButton.disabled = true; playerNameSetupDiv.style.display = 'none'; 
+                playerCountSelect.disabled = true; 
+                startGameButton.disabled = true; 
+                playerNameSetupDiv.style.display = 'none'; 
                 bgMusic.play().catch(e => console.warn("Music autoplay prevented:", e)); 
             });
         });
@@ -1706,6 +1972,400 @@
         window.addEventListener('resize', () => { 
             if (gameState.gameStarted || Object.keys(gameState.players).length > 0) positionPlayers(); 
             drawFateWheel(fateWheelOutcomes); 
+        });
+
+        /* ========================================================
+           管理員模式與題庫管理邏輯 (密碼採 SHA-256 雜湊比對防洩漏)
+           ======================================================== */
+        const ADMIN_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
+        let isAdminLoggedIn = false;
+
+        // 備份初始系統題庫供還原使用
+        const DEFAULT_QUIZ_DATA = JSON.parse(JSON.stringify(gameState.quizData));
+        const QUIZ_STORAGE_KEY = 'sxhs_monopoly_custom_quiz_v1';
+
+        // 載入自訂題庫 (若有)
+        function loadCustomQuizzes() {
+            try {
+                const stored = localStorage.getItem(QUIZ_STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && typeof parsed === 'object') {
+                        gameState.quizData = parsed;
+                    }
+                }
+            } catch (e) {
+                console.error("載入題庫失敗:", e);
+            }
+        }
+        loadCustomQuizzes();
+
+        // 管理員 DOM 元素
+        const adminModeButton = el('admin-mode-button');
+        const adminLoginModal = el('admin-login-modal');
+        const adminLoginClose = el('admin-login-close');
+        const adminLoginCancel = el('admin-login-cancel');
+        const adminLoginSubmit = el('admin-login-submit');
+        const adminPasswordInput = el('admin-password-input');
+        const adminLoginError = el('admin-login-error');
+
+        const adminPanelModal = el('admin-panel-modal');
+        const adminPanelClose = el('admin-panel-close');
+        const adminLogoutBtn = el('admin-logout-btn');
+        const adminResetDefaultBtn = el('admin-reset-default-btn');
+        const adminCategoryFilter = el('admin-category-filter');
+        const adminAddQuizBtn = el('admin-add-quiz-btn');
+        const adminQuizSummary = el('admin-quiz-summary');
+        const adminQuizList = el('admin-quiz-list');
+
+        const adminEditFormContainer = el('admin-edit-form-container');
+        const adminQuizForm = el('admin-quiz-form');
+        const adminFormTitle = el('admin-form-title');
+        const adminFormCancel = el('admin-form-cancel');
+        const editQuizCategory = el('edit-quiz-category');
+        const editQuizQ = el('edit-quiz-q');
+        const editOriginalCat = el('edit-original-cat');
+        const editOriginalIndex = el('edit-original-index');
+
+        async function verifyPassword(pwd) {
+            if (!pwd) return false;
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(pwd);
+                const hashBuf = await crypto.subtle.digest('SHA-256', data);
+                const hashArr = Array.from(new Uint8Array(hashBuf));
+                const hashHex = hashArr.map(b => b.toString(16).padStart(2, '0')).join('');
+                return hashHex === ADMIN_HASH;
+            } catch (e) {
+                let h = 0;
+                for (let i = 0; i < pwd.length; i++) {
+                    h = ((h << 5) - h) + pwd.charCodeAt(i);
+                    h |= 0;
+                }
+                return h === 92668751;
+            }
+        }
+
+        function openAdminLogin() {
+            adminPasswordInput.value = '';
+            adminLoginError.classList.add('hidden');
+            adminLoginModal.classList.add('active');
+            setTimeout(() => adminPasswordInput.focus(), 100);
+        }
+
+        function closeAdminLogin() {
+            adminLoginModal.classList.remove('active');
+            adminPasswordInput.value = '';
+        }
+
+        function openAdminPanel() {
+            initAdminCategoryOptions();
+            renderAdminQuizList();
+            adminPanelModal.classList.add('active');
+        }
+
+        function closeAdminPanel() {
+            adminPanelModal.classList.remove('active');
+            adminEditFormContainer.classList.add('hidden');
+        }
+
+        async function handleAdminLogin() {
+            const pwd = adminPasswordInput.value;
+            const isValid = await verifyPassword(pwd);
+            if (isValid) {
+                isAdminLoggedIn = true;
+                closeAdminLogin();
+                openAdminPanel();
+            } else {
+                adminLoginError.classList.remove('hidden');
+                adminPasswordInput.focus();
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function initAdminCategoryOptions() {
+            const categories = Object.keys(gameState.quizData);
+            const currentFilter = adminCategoryFilter.value;
+            adminCategoryFilter.innerHTML = `<option value="all">全部景點 (${categories.length} 個景點)</option>`;
+            categories.forEach(cat => {
+                const count = (gameState.quizData[cat] || []).length;
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = `${cat} (${count} 題)`;
+                adminCategoryFilter.appendChild(opt);
+            });
+            if (categories.includes(currentFilter)) {
+                adminCategoryFilter.value = currentFilter;
+            } else {
+                adminCategoryFilter.value = 'all';
+            }
+
+            editQuizCategory.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                editQuizCategory.appendChild(opt);
+            });
+        }
+
+        function renderAdminQuizList() {
+            const filterCat = adminCategoryFilter.value;
+            const categories = Object.keys(gameState.quizData);
+            let totalQuestions = 0;
+            let displayList = [];
+
+            categories.forEach(cat => {
+                const qList = gameState.quizData[cat] || [];
+                totalQuestions += qList.length;
+                if (filterCat === 'all' || filterCat === cat) {
+                    qList.forEach((qItem, index) => {
+                        displayList.push({ category: cat, index, ...qItem });
+                    });
+                }
+            });
+
+            adminQuizSummary.textContent = `共 ${categories.length} 個景點，總計 ${totalQuestions} 道題目（目前顯示 ${displayList.length} 題）`;
+            adminQuizList.innerHTML = '';
+
+            if (displayList.length === 0) {
+                adminQuizList.innerHTML = `
+                    <div class="text-center py-10 text-gray-400">
+                        <i class="fas fa-folder-open text-3xl mb-2"></i>
+                        <p class="text-sm">此景點目前沒有題目，請點選上方按鈕新增！</p>
+                    </div>`;
+                return;
+            }
+
+            displayList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'p-3.5 border rounded-xl bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 shadow-sm transition hover:shadow-md';
+                
+                let optionsHtml = '';
+                item.o.forEach((optText, oIdx) => {
+                    const isCorrect = (oIdx === item.a);
+                    optionsHtml += `
+                        <div class="text-xs p-1.5 px-2.5 rounded-lg flex items-center justify-between ${isCorrect ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 font-semibold border border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300'}">
+                            <span><b class="mr-1">${String.fromCharCode(65 + oIdx)}.</b> ${escapeHtml(optText)}</span>
+                            ${isCorrect ? '<span class="text-[11px] px-1.5 py-0.5 rounded bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200"><i class="fas fa-check mr-1"></i>正確解答</span>' : ''}
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                                ${escapeHtml(item.category)}
+                            </span>
+                            <span class="text-xs text-gray-400">#${item.index + 1}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button class="edit-quiz-btn px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-slate-800 rounded transition" data-cat="${escapeHtml(item.category)}" data-index="${item.index}">
+                                <i class="fas fa-pen-to-square mr-1"></i>編輯
+                            </button>
+                            <button class="delete-quiz-btn px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-800 rounded transition" data-cat="${escapeHtml(item.category)}" data-index="${item.index}">
+                                <i class="fas fa-trash-can mr-1"></i>刪除
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2.5 leading-relaxed">${escapeHtml(item.q)}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                        ${optionsHtml}
+                    </div>
+                `;
+                adminQuizList.appendChild(card);
+            });
+
+            adminQuizList.querySelectorAll('.edit-quiz-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    audioManager.play('buttonClick');
+                    const cat = e.currentTarget.dataset.cat;
+                    const idx = parseInt(e.currentTarget.dataset.index);
+                    openEditQuiz(cat, idx);
+                });
+            });
+            adminQuizList.querySelectorAll('.delete-quiz-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    audioManager.play('buttonClick');
+                    const cat = e.currentTarget.dataset.cat;
+                    const idx = parseInt(e.currentTarget.dataset.index);
+                    deleteQuiz(cat, idx);
+                });
+            });
+        }
+
+        function openEditQuiz(cat, index) {
+            const qItem = (gameState.quizData[cat] || [])[index];
+            if (!qItem) return;
+
+            adminFormTitle.innerHTML = `<i class="fas fa-pen-to-square"></i> 編輯題目 [${cat} - #${index + 1}]`;
+            editOriginalCat.value = cat;
+            editOriginalIndex.value = index;
+            editQuizCategory.value = cat;
+            editQuizQ.value = qItem.q;
+
+            for (let i = 0; i < 4; i++) {
+                el(`edit-opt-${i}`).value = qItem.o[i] || '';
+            }
+            const radio = adminQuizForm.querySelector(`input[name="correct_answer"][value="${qItem.a}"]`);
+            if (radio) radio.checked = true;
+
+            adminEditFormContainer.classList.remove('hidden');
+            adminEditFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function openAddQuiz() {
+            adminFormTitle.innerHTML = `<i class="fas fa-plus"></i> 新增題目`;
+            editOriginalCat.value = '';
+            editOriginalIndex.value = '';
+            
+            const currentFilter = adminCategoryFilter.value;
+            if (currentFilter !== 'all' && gameState.quizData[currentFilter]) {
+                editQuizCategory.value = currentFilter;
+            } else {
+                editQuizCategory.value = Object.keys(gameState.quizData)[0] || '';
+            }
+
+            editQuizQ.value = '';
+            for (let i = 0; i < 4; i++) {
+                el(`edit-opt-${i}`).value = '';
+            }
+            const firstRadio = adminQuizForm.querySelector(`input[name="correct_answer"][value="0"]`);
+            if (firstRadio) firstRadio.checked = true;
+
+            adminEditFormContainer.classList.remove('hidden');
+            adminEditFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function saveCustomQuizzesToStorage() {
+            try {
+                localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(gameState.quizData));
+            } catch (e) {
+                console.error("儲存題庫失敗:", e);
+            }
+        }
+
+        adminQuizForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            audioManager.play('buttonClick');
+            const targetCat = editQuizCategory.value;
+            const qText = editQuizQ.value.trim();
+            const options = [
+                el('edit-opt-0').value.trim(),
+                el('edit-opt-1').value.trim(),
+                el('edit-opt-2').value.trim(),
+                el('edit-opt-3').value.trim()
+            ];
+            const answerRadio = adminQuizForm.querySelector('input[name="correct_answer"]:checked');
+            const answerIdx = answerRadio ? parseInt(answerRadio.value) : 0;
+
+            if (!qText || options.some(opt => !opt)) {
+                alert("請完整填寫題目敘述與 4 個選項！");
+                return;
+            }
+
+            if (!gameState.quizData[targetCat]) {
+                gameState.quizData[targetCat] = [];
+            }
+
+            const origCat = editOriginalCat.value;
+            const origIndexStr = editOriginalIndex.value;
+            const newQuizObj = { q: qText, o: options, a: answerIdx };
+
+            if (origCat && origIndexStr !== '') {
+                const origIdx = parseInt(origIndexStr);
+                if (origCat === targetCat) {
+                    gameState.quizData[targetCat][origIdx] = newQuizObj;
+                } else {
+                    gameState.quizData[origCat].splice(origIdx, 1);
+                    gameState.quizData[targetCat].push(newQuizObj);
+                }
+            } else {
+                gameState.quizData[targetCat].push(newQuizObj);
+            }
+
+            saveCustomQuizzesToStorage();
+            adminEditFormContainer.classList.add('hidden');
+            initAdminCategoryOptions();
+            renderAdminQuizList();
+            alert("題目已儲存成功！");
+        });
+
+        function deleteQuiz(cat, index) {
+            const qList = gameState.quizData[cat];
+            if (!qList || !qList[index]) return;
+
+            if (qList.length <= 1) {
+                if (!confirm(`警告：景點「${cat}」目前僅剩 1 題。確認要刪除嗎？`)) return;
+            } else {
+                if (!confirm(`確認要刪除這道題目嗎？\n\n題目：${qList[index].q}`)) return;
+            }
+
+            qList.splice(index, 1);
+            saveCustomQuizzesToStorage();
+            initAdminCategoryOptions();
+            renderAdminQuizList();
+        }
+
+        function resetToDefaultQuizzes() {
+            if (confirm("確認要將所有題庫還原為「系統預設題庫」嗎？\n這將清除所有自訂與修改後的題目！")) {
+                gameState.quizData = JSON.parse(JSON.stringify(DEFAULT_QUIZ_DATA));
+                localStorage.removeItem(QUIZ_STORAGE_KEY);
+                adminEditFormContainer.classList.add('hidden');
+                initAdminCategoryOptions();
+                renderAdminQuizList();
+                alert("已成功還原為預設題庫！");
+            }
+        }
+
+        // 管理員按鈕與模態框事件綁定
+        adminModeButton.addEventListener('click', () => {
+            audioManager.play('buttonClick');
+            if (isAdminLoggedIn) {
+                openAdminPanel();
+            } else {
+                openAdminLogin();
+            }
+        });
+
+        adminLoginClose.addEventListener('click', () => { audioManager.play('buttonClick'); closeAdminLogin(); });
+        adminLoginCancel.addEventListener('click', () => { audioManager.play('buttonClick'); closeAdminLogin(); });
+        adminLoginSubmit.addEventListener('click', () => { audioManager.play('buttonClick'); handleAdminLogin(); });
+        adminPasswordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleAdminLogin();
+        });
+
+        adminPanelClose.addEventListener('click', () => { audioManager.play('buttonClick'); closeAdminPanel(); });
+        adminLogoutBtn.addEventListener('click', () => {
+            audioManager.play('buttonClick');
+            isAdminLoggedIn = false;
+            closeAdminPanel();
+            alert("管理員已登出。");
+        });
+        adminResetDefaultBtn.addEventListener('click', () => {
+            audioManager.play('buttonClick');
+            resetToDefaultQuizzes();
+        });
+        adminCategoryFilter.addEventListener('change', () => {
+            renderAdminQuizList();
+        });
+        adminAddQuizBtn.addEventListener('click', () => {
+            audioManager.play('buttonClick');
+            openAddQuiz();
+        });
+        adminFormCancel.addEventListener('click', () => {
+            audioManager.play('buttonClick');
+            adminEditFormContainer.classList.add('hidden');
         });
     </script>
 </body>
